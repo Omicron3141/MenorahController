@@ -1,36 +1,43 @@
-#include <TimeLib.h>
-#include "SPI.h" // necessary library
-#include "Time.h"
+/* MenorahControl for Teensyduino
+   Written by Jonah Rubin and Ken Rubin
+*/
 
-const int ledPins = 9;
-int ledPin[ledPins] = {3,4,6,9,16,17,20,22,23};
+#include "SPI.h" // necessary libraries
+#include "Time.h" 
+#include <TimeLib.h> 
+
+const int ledPins = 9; // A Menorah as 9 candles (1 for each of the 8 nights and the shamash)
+int ledPin[ledPins] = {3,4,6,9,16,17,20,22,23}; //The pins in the array start with the shamash and then each pin represents a subsequent candle
 
 //int testledPin = 13;
 
-int selectbuttonPin = 18;
-int modebuttonPin = 7;
+int selectbuttonPin = 18; // select button is used to sequence through days and through hours
+int modebuttonPin = 7; // mode button is used to change into day mode, hour mode, and run mode
 
-unsigned long selectbuttonLastPress = 0;
-unsigned long modebuttonLastPress = 0;
+unsigned long selectbuttonLastPress = 0; // holds the last time (in milliseconds) that the select button was pressed
+unsigned long modebuttonLastPress = 0; // holds the last time (in milliseconds) that the mode button was pressed
 
 // delay between accepted button presses in milliseconds
+// the delay is necessary to ensure that one push of the button won't cause multiple changes
 int validPressDelay = 300;
 
 int ssPin = 10;
 
-// 0 = run, 1 = day select, 2 = hour select
-const int daySelect = 0;
-const int hourSelect = 1;
-const int systemRun = 2;
+// 0 = day select, 1 = hour select, 2 = run mode
+const int daySelect = 0; // this is the mode for selecting the day
+const int hourSelect = 1; // this is the mode for selecting the hour in 24 hr military format
+const int systemRun = 2; // this is the normal run mode used once the day and hour have been set
 
-int mode = daySelect;
+int mode = daySelect; // when the Teensy boots up, it will come up in day select mode
 
-// assume it is the day before the first night on startup
+// assume it is the day before the first night on startup. So if Hannukah starts this evening at sundown, then currentDay would be 0 indicating that this evening will be day one
 int currentDay = 0;
 
-char tempDisplayString[10];
+// string buffer to hold the characters to be displayed on the 8 segment LED display
+char tempDisplayString[10]; 
 
-// keeps track of whether we've ticked up the day within the past hour
+// keeps track of whether we've incremented up the day within the past hour
+// we need to ensure that we don't continuous increment the day more than once when we go from 4:59pm to 5:00pm
 bool dayTickoverHappened = false;
 
 void setup() {
@@ -41,23 +48,27 @@ void setup() {
     pinMode(thisPin, OUTPUT);
   }
   
-  pinMode(modebuttonPin, INPUT);
-  pinMode(selectbuttonPin, INPUT);
+  pinMode(modebuttonPin, INPUT); // define the Teensy pin used for mode changes to be an input pin
+  pinMode(selectbuttonPin, INPUT); // define the Teensy pin used for selection changes to be an input pin
 
-  pinMode(ssPin, OUTPUT); // we use this for SS pin
+  pinMode(ssPin, OUTPUT); // define the Teensy pin ss to be an output pin
   digitalWrite(ssPin, HIGH);  // Set the SS pin HIGH
   SPI.begin();  // Begin SPI hardware
   SPI.setClockDivider(SPI_CLOCK_DIV64);  // Slow down SPI clock
   clearDisplaySPI();
 }
 
+// this function provides the default candle flicker behavior
 void flicker(int pin) {
-  analogWrite(pin, random(100, 255));
+  analogWrite(pin, random(100, 255)); // the default candle flicker is achieved by writing a randon voltage between 100 and 255 to the proper candle pin
 }
 
+// this function turns off a candle
 void dark(int pin) {
   analogWrite(pin, 0);
 }
+
+//the main loop
 void loop() {
   int illuminatedPins = currentDay;
   if (illuminatedPins <= 0) {
