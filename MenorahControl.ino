@@ -7,7 +7,7 @@
 #include <TimeLib.h> 
 
 const int ledPins = 9; // A Menorah as 9 candles (1 for each of the 8 nights and the shamash)
-int ledPin[ledPins] = {3,4,6,9,16,17,20,22,23}; //The pins in the array start with the shamash and then each pin represents a subsequent candle
+int ledPin[ledPins] = {20,3,4,9,16,23,22,6,17}; //The pins in the array start with the shamash and then each pin represents a subsequent candle
 
 //int testledPin = 13;
 
